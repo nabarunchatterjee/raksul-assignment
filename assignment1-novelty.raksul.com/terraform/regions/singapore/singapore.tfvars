@@ -1,0 +1,32 @@
+name        = "novelty"
+environment = "production"
+region      = "ap-southeast-1"
+
+vpc_cidr = "10.20.0.0/16"
+
+availability_zones = [
+  "ap-southeast-1a",
+  "ap-southeast-1b"
+]
+
+certificate_arn = "arn:aws:acm:ap-southeast-1:<account-id>:certificate/<certificate-id>"
+
+container_name  = "novelty"
+container_image = "<aws-account-id>.dkr.ecr.ap-southeast-1.amazonaws.com/novelty:latest"
+container_port  = 8080
+
+ecs_cpu          = 512
+ecs_memory       = 1024
+desired_count    = 2
+ecs_min_capacity = 2
+ecs_max_capacity = 10
+
+db_name                    = "novelty"
+db_username                = "novelty_admin"
+postgres_engine_version    = "17"
+db_instance_class          = "db.t4g.micro"
+db_allocated_storage       = 20
+db_max_allocated_storage   = 100
+db_backup_retention_period = 7
+db_deletion_protection     = true
+db_skip_final_snapshot     = false
