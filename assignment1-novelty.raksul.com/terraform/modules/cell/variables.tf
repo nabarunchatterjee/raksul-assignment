@@ -39,8 +39,13 @@ variable "container_name" {
   default     = "novelty"
 }
 
-variable "container_image" {
-  description = "Docker image for the Novelty application"
+variable "ecr_repository_name" {
+  description = "ECR repo for the Novelty application"
+  type        = string
+}
+
+variable "container_tag" {
+  description = "Tag for container image"
   type        = string
 }
 
@@ -95,8 +100,8 @@ variable "ecs_max_capacity" {
 # Application Load Balancer
 # ------------------------------------------------------------------------------
 
-variable "certificate_arn" {
-  description = "ARN of the ACM certificate used by the HTTPS ALB listener"
+variable "certificate_domain" {
+  description = "Domain name of the existing ACM certificate"
   type        = string
 }
 

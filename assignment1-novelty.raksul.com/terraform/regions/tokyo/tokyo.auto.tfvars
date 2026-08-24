@@ -9,11 +9,12 @@ availability_zones = [
   "ap-northeast-1c"
 ]
 
-certificate_arn = "arn:aws:acm:ap-northeast-1:<account-id>:certificate/<certificate-id>"
+certificate_domain = "novelty.raksul.com"
 
-container_name  = "novelty"
-container_image = "<aws-account-id>.dkr.ecr.ap-northeast-1.amazonaws.com/novelty:latest"
-container_port  = 8080
+container_name      = "novelty"
+ecr_repository_name = "novelty"
+container_tag       = "v1.0.0"
+container_port      = 8080
 
 ecs_cpu          = 512
 ecs_memory       = 1024

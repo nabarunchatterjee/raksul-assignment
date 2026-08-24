@@ -77,13 +77,19 @@ resource "aws_lb_listener" "novelty_http_listener" {
 # The certificate ARN is supplied by the root module.
 # ------------------------------------------------------------------------------
 
+data "aws_acm_certificate" "novelty_certificate" {
+  domain      = var.certificate_domain
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
+
 resource "aws_lb_listener" "novelty_https_listener" {
   load_balancer_arn = aws_lb.novelty_application_load_balancer.arn
   port              = 443
   protocol          = "HTTPS"
 
   ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn = var.certificate_arn
+  certificate_arn = data.aws_acm_certificate.novelty_certificate.arn
 
   default_action {
     type             = "forward"

@@ -92,6 +92,10 @@ resource "aws_cloudwatch_log_group" "novelty_ecs_log_group" {
 # ECS Task Definition
 # ------------------------------------------------------------------------------
 
+data "aws_ecr_repository" "novelty_container_repository" {
+  name = var.ecr_repository_name
+}
+
 resource "aws_ecs_task_definition" "novelty_ecs_task_definition" {
   family                   = "${local.name}-task"
   network_mode             = "awsvpc"
@@ -106,7 +110,7 @@ resource "aws_ecs_task_definition" "novelty_ecs_task_definition" {
   container_definitions = jsonencode([
     {
       name      = var.container_name
-      image     = var.container_image
+      image     = "${data.aws_ecr_repository.novelty_container_repository.repository_url}:${var.container_tag}"
       essential = true
 
       portMappings = [

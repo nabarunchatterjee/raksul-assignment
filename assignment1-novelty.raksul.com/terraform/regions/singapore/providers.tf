@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "s3" {
-    bucket       = "raksul-terraform-state-singapore"
+    bucket       = "raksul-terraform-state-singapore1"
     key          = "novelty/singapore/terraform.tfstate"
     region       = "ap-southeast-1"
     use_lockfile = true

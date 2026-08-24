@@ -37,11 +37,10 @@ variable "availability_zones" {
 # Load Balancer
 # ------------------------------------------------------------------------------
 
-variable "certificate_arn" {
-  description = "ACM certificate ARN for the ALB"
+variable "certificate_domain" {
+  description = "Domain name of the existing ACM certificate"
   type        = string
 }
-
 
 # ------------------------------------------------------------------------------
 # ECS
@@ -52,8 +51,13 @@ variable "container_name" {
   type        = string
 }
 
-variable "container_image" {
-  description = "Application container image"
+variable "ecr_repository_name" {
+  description = "ECR repo for the Novelty application"
+  type        = string
+}
+
+variable "container_tag" {
+  description = "Tag for container image"
   type        = string
 }
 
@@ -99,12 +103,6 @@ variable "db_name" {
 
 variable "db_username" {
   description = "PostgreSQL master username"
-  type        = string
-  sensitive   = true
-}
-
-variable "db_password" {
-  description = "PostgreSQL master password"
   type        = string
   sensitive   = true
 }

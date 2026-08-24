@@ -7,11 +7,12 @@ module "novelty_cell" {
   vpc_cidr           = var.vpc_cidr
   availability_zones = var.availability_zones
 
-  certificate_arn = var.certificate_arn
+  certificate_domain = var.certificate_domain
 
-  container_name  = var.container_name
-  container_image = var.container_image
-  container_port  = var.container_port
+  container_name      = var.container_name
+  ecr_repository_name = var.ecr_repository_name
+  container_tag       = var.container_tag
+  container_port      = var.container_port
 
   ecs_cpu          = var.ecs_cpu
   ecs_memory       = var.ecs_memory
