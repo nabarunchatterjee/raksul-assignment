@@ -29,7 +29,7 @@ resource "aws_internet_gateway" "novelty_internet_gateway" {
 # ------------------------------------------------------------------------------
 # Public Subnets
 #
-# Used by the Application Load Balancer and NAT Gateway.
+# Used by the Application Load Balancer and NAT Gateways.
 # One subnet is created in each Availability Zone.
 # ------------------------------------------------------------------------------
 
@@ -58,8 +58,8 @@ resource "aws_subnet" "novelty_public_subnets" {
 # Application Subnets
 #
 # ECS Fargate tasks run in these subnets.
-# They do not receive public IP addresses.
-# Outbound internet access is provided through the NAT Gateway.
+# Each application subnet uses the NAT Gateway in the same Availability Zone
+# for outbound Internet access.
 # ------------------------------------------------------------------------------
 
 resource "aws_subnet" "novelty_app_subnets" {
@@ -140,67 +140,65 @@ resource "aws_route_table_association" "novelty_public_route_associations" {
 
 
 # ------------------------------------------------------------------------------
-# NAT Gateway
+# NAT Gateways
 #
-# A single NAT Gateway is used per cell to keep the assignment implementation
-# simple and cost-conscious.
-#
-# For stronger AZ-level resilience, production deployments could provision
-# one NAT Gateway per Availability Zone.
+# One NAT Gateway is created in each Availability Zone.
+# Each NAT Gateway uses an Elastic IP and is placed in the public subnet of
+# the same Availability Zone.
 # ------------------------------------------------------------------------------
 
-resource "aws_eip" "novelty_nat_eip" {
+resource "aws_eip" "novelty_nat_eips" {
+  count  = length(var.availability_zones)
   domain = "vpc"
 
   tags = merge(local.common_tags, {
-    Name = "${local.name}-nat-eip"
+    Name = "${local.name}-nat-eip-${var.availability_zones[count.index]}"
   })
 }
 
-resource "aws_nat_gateway" "novelty_nat_gateway" {
-  allocation_id = aws_eip.novelty_nat_eip.id
-  subnet_id     = aws_subnet.novelty_public_subnets[0].id
+resource "aws_nat_gateway" "novelty_nat_gateways" {
+  count = length(var.availability_zones)
 
-  depends_on = [
-    aws_internet_gateway.novelty_internet_gateway
-  ]
+  allocation_id = aws_eip.novelty_nat_eips[count.index].id
+  subnet_id     = aws_subnet.novelty_public_subnets[count.index].id
 
   tags = merge(local.common_tags, {
-    Name = "${local.name}-nat-gateway"
+    Name = "${local.name}-nat-gateway-${var.availability_zones[count.index]}"
   })
 }
 
 
 # ------------------------------------------------------------------------------
-# Application Route Table
+# Application Route Tables
 #
-# Private application subnets use the NAT Gateway for outbound access.
-# This allows ECS tasks to:
-#
-# - pull container images
-# - access AWS APIs
-# - call RAKSUL shared platform APIs
+# Each Availability Zone has its own route table.
+# The application subnet routes outbound traffic through the NAT Gateway
+# in the same Availability Zone.
 # ------------------------------------------------------------------------------
 
-resource "aws_route_table" "novelty_app_route_table" {
+resource "aws_route_table" "novelty_app_route_tables" {
+  count = length(var.availability_zones)
+
   vpc_id = aws_vpc.novelty_vpc.id
 
   tags = merge(local.common_tags, {
-    Name = "${local.name}-app-route-table"
+    Name = "${local.name}-app-route-table-${var.availability_zones[count.index]}"
   })
 }
 
-resource "aws_route" "novelty_app_internet_route" {
-  route_table_id         = aws_route_table.novelty_app_route_table.id
+resource "aws_route" "novelty_app_internet_routes" {
+  count = length(var.availability_zones)
+
+  route_table_id         = aws_route_table.novelty_app_route_tables[count.index].id
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = aws_nat_gateway.novelty_nat_gateway.id
+  nat_gateway_id         = aws_nat_gateway.novelty_nat_gateways[count.index].id
 }
 
 resource "aws_route_table_association" "novelty_app_route_associations" {
-  count = length(aws_subnet.novelty_app_subnets)
+  count = length(var.availability_zones)
 
   subnet_id      = aws_subnet.novelty_app_subnets[count.index].id
-  route_table_id = aws_route_table.novelty_app_route_table.id
+  route_table_id = aws_route_table.novelty_app_route_tables[count.index].id
 }
 
 
