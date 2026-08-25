@@ -329,10 +329,11 @@ still allowing the regional rollout to remain independent.
 ### Production considerations
 
 * CloudFront / CDN
-	  Put CloudFront in front of cacheable content, especially
-	  product images, static assets and potentially public product/catalog
-	  responses. This reduces latency for users and reduces load on S3 and ECS. It
-	  becomes particularly useful as we add more regional cells.
+
+	Put CloudFront in front of cacheable content, especially
+	product images, static assets and potentially public product/catalog
+	responses. This reduces latency for users and reduces load on S3 and ECS. It
+	becomes particularly useful as we add more regional cells.
 
 * Application caching
 
@@ -426,6 +427,7 @@ can introduce cross-region replicas if the requirements around regional recovery
 user mobility, RPO and RTO justify the additional complexity.
 
 The evolution could look like:
+
 	Multi-AZ RDS
 	     ↓
 	Read replicas
