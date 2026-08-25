@@ -254,7 +254,7 @@ This means adding another region is mostly:
 
 rather than copying infrastructure code.
 
-### Why I chose this structure
+#### Why I chose this structure
 
 The important separation is:
 
@@ -263,9 +263,11 @@ The important separation is:
 
 This maps directly to the architecture and gives us three useful properties:
 
-Consistency: every cell is built from the same module.
-Isolation: each region has independent Terraform state and deployment.
-Extensibility: adding another region doesn't require duplicating the
+**Consistency**: every cell is built from the same module.
+
+**Isolation**: each region has independent Terraform state and deployment.
+
+**Extensibility**: adding another region doesn't require duplicating the
 infrastructure implementation.
 
 ### Application deployments
@@ -368,6 +370,102 @@ business-critical flows such as checkout, cart and payment failures.
 * S3 lifecycle policies: Particularly important for Novelty because
   customer/product images can accumulate significantly over time.
 
+## Scaling Novelty for the next 5–10 years
+
+The current design gives us a good starting point because the cell is already
+the unit of deployment. I would first scale capacity within a cell and add new
+cells when geography, availability, or traffic requires it.
+
+1. Scale within a region
+
+Initially, ECS can scale horizontally as traffic grows. Since the application
+tasks are stateless, we can add more Fargate tasks behind the ALB without changing
+the overall architecture.
+
+              ALB
+               │
+       ┌───────┼───────┐
+       ▼       ▼       ▼
+     ECS     ECS     ECS
+     
+For the database, we can initially scale the RDS instance vertically and introduce
+read replicas when read traffic becomes significant.
+
+2. Add more regional cells
+
+As Novelty expands geographically, we don't need to redesign the application. We
+can add new cells using the same infrastructure pattern.
+
+	Tokyo       Singapore       Europe       US
+	Cell          Cell           Cell       Cell
+
+The reusable Terraform cell module makes this straightforward. Adding a region
+mainly means creating a new regional environment and providing its configuration,
+rather than copying and modifying the infrastructure implementation.
+
+3. Introduce edge caching
+
+As traffic grows, serving every product image and static asset from the regional
+infrastructure becomes unnecessary. CloudFront can cache this content closer to
+users and reduce the load on the regional cells.
+
+                    CloudFront
+                 /      |       \
+              Japan  Singapore   US
+                 \      |       /
+                    Regional
+                      Cells
+		      
+For product and catalog data, application-level caching such as Redis can be
+introduced once the traffic pattern justifies it.
+
+4. Evolve the database architecture
+
+I would not start with a globally distributed database. As the business grows, we
+can introduce cross-region replicas if the requirements around regional recovery,
+user mobility, RPO and RTO justify the additional complexity.
+
+The evolution could look like:
+	Multi-AZ RDS
+	     ↓
+	Read replicas
+	     ↓
+	Cross-region replicas
+	     ↓
+	Potential globally distributed data model
+
+
+This allows us to introduce distributed data architecture when the business
+actually needs it rather than taking on that complexity from the beginning.
+
+5. Standardize operations across cells
+
+As the number of cells grows, manually operating each region will not scale. The
+platform should provide common deployment pipelines, observability, alerting,
+security controls and cost monitoring while keeping the application cells
+independently deployable.
+
+The goal is to standardize how cells are operated without making the cells
+dependent on each other.
+
+6. Scale the platform beyond Novelty
+
+The longer-term goal is not to build a Novelty-specific infrastructure platform.
+The cell pattern can become a reusable capability for other RAKSUL applications.
+
+                 RAKSUL Cloud Platform
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+       Novelty         App B          App C
+        Cells           Cells          Cells
+	
+The same patterns for networking, ECS, security, observability and regional
+deployment can then be reused across the Group.
+
+This means the infrastructure team can support more applications, more regions
+and more teams without increasing operational complexity at the same rate.
+
 ### Trade-offs
 
 #### 1. ECS Fargate vs. EKS
@@ -395,3 +493,4 @@ A distributed database could make cross-region operation easier, but it would
 introduce additional complexity around data modelling, consistency and
 transactions. Since those requirements aren't specified in the assignment, I
 preferred the simpler relational model.
+
